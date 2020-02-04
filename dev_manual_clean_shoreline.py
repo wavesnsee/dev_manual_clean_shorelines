@@ -136,6 +136,10 @@ def draw_shoreline(img, coastline, result_jpg):
     cv2.imwrite(result_jpg, img)
 
 
+def mkdir_if_no_exist(dir):
+    if not exists(dir):
+        makedirs(dir)
+
 
 if __name__ == '__main__':
     # Definition of the directories we need: coastline, coastline_selection, images
@@ -143,6 +147,7 @@ if __name__ == '__main__':
     Output_dir = opts.Output_dir
     Shoreline_dir = join(Output_dir, 'coastline/')
     Shoreline_selection_dir = join(Output_dir, 'coastline_selection/')
+    Shoreline_defective_dir = join(Output_dir, 'coastline_defective/')
     images_dir = join(Output_dir, 'images/')
 
     # List of all coastline images
@@ -152,8 +157,8 @@ if __name__ == '__main__':
     for f in ls:
         path = Path(f)
         rep_selection_dir = join(Shoreline_selection_dir, path.parent.name)
-        if not exists(rep_selection_dir):
-            makedirs(rep_selection_dir)
+        mkdir_if_no_exist(rep_selection_dir)
+
         print(f)
         _, name_jpg = split(f)
         f_txt = f.replace('.jpg', '.txt')
@@ -167,11 +172,13 @@ if __name__ == '__main__':
         img = cimg.read(f)
         fig = show(img, display=True)
 
-        # Decide if we want to keep it as it is, or perform a manual clean
-        msg = "Do you want to remove any part(s) of the coastline detection? (y/n)"
+        # Decide if we want to throw away all the coastline, or keep it as it is, or perform a manual clean
+        msg = "Do you want to Throw away all the coastline, Keep it as it is, or Remove any part(s) of the coastline \
+         detection? (t/k/r)"
         manual_clean = raw_input(msg)
 
-        if manual_clean == 'y':
+        if manual_clean == 'r':
+
             fig = show(img, display=False)
 
             # Definition of the areas to be masked
@@ -211,10 +218,19 @@ if __name__ == '__main__':
             img_A = cimg.read(f_jpg_A[0])
             draw_shoreline(img_A, coastline, f_jpg_out)
 
-        else:
-            # copy of the original coastline image and txt file
-            shutil.copy(f, f_jpg_out)
-            shutil.copy(f_txt, f_txt_out)
+        if (manual_clean == 't') + (manual_clean == 'r'):
+            # Move original coastline files to rep_defective_dir
+            rep_defective_dir = join(Shoreline_defective_dir, path.parent.name)
+            mkdir_if_no_exist(rep_defective_dir)
+            f_txt_defect = join(rep_defective_dir, name_txt)
+            f_jpg_defect = join(rep_defective_dir, name_jpg)
+            shutil.move(f, f_jpg_defect)
+            shutil.move(f_txt, f_txt_defect)
+
+        elif manual_clean == 'k':
+            # move directly the original coastline image and txt file to coastline_selection
+            shutil.move(f, f_jpg_out)
+            shutil.move(f_txt, f_txt_out)
 
 
 
