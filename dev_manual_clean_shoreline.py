@@ -255,14 +255,12 @@ if __name__ == '__main__':
 
                             elif manual_clean == 'c':
                                 # check if shoreline point is inside of any of the areas to be chosen:
-                                spike = False
+                                spike = True
                                 for i in range(len(sl_mask)):
                                     polygon = Polygon(sl_mask[str(i)]._points)
-                                    if not polygon.contains(point):
-                                        spike = True
+                                    if polygon.contains(point):
+                                        spike = False
                                         break
-                                    else:
-                                        print('ouhbaaaaa')
 
                             # if ok add coastline point to clean coastline
                             if not spike:
