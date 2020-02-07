@@ -3,12 +3,14 @@
 
 """
 manual clean of detected coastlines, to only keep clean parts of detections
+
+Usage: dev_manual_clean_shoreline.py <input_dir_coastline> <output_dir_coastline_selection>
 """
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
-
+import pdb
 import cv2
 import shutil
 import cams.geom as geom
@@ -32,8 +34,23 @@ class Opts(ArgumentParser):
         super(Opts, self).__init__(*args, **kwargs)
 
         self.add_argument(
+            'Intput_dir',
+            help="Input directory"
+        )
+
+        self.add_argument(
             'Output_dir',
             help="Output directory"
+        )
+
+        self.add_argument(
+            'Images_dir',
+            help="Images directory"
+        )
+
+        self.add_argument(
+            '--check_coastlines',
+            help="Optional choice to check coastline_txt files"
         )
 
     def parse_args(self, *args, **kwargs):
@@ -54,7 +71,7 @@ def show(img, display=False):
         """
     import matplotlib.pyplot as plt
     im_plot = img
-    fig = plt.figure()
+    fig = plt.figure(figsize=(16, 10))
     ax = fig.add_subplot(111)
     cimg.showmpl(im_plot, ax=ax)
     xlim = plt.xlim()
@@ -100,7 +117,7 @@ def sl_mask_define(img, fig=None):
         ax.imshow(img[:, :, ::-1])
         points[str(i)] = fig.ginput(n=0, timeout=0)
         points[str(i)] = [(int(x), int(y)) for x, y in points[str(i)]]
-        msg += " \n Do you want to mask an other part of the coastline ? (y/n)"
+        msg += " \n Do you want to choose/mask an other part of the coastline ? (y/n)"
         other_mask = raw_input(msg)
         if other_mask == 'y':
             i += 1
@@ -121,7 +138,6 @@ def sl_mask_define(img, fig=None):
     plt.imshow(masked[:, :, ::-1])
     plt.show()
     return roi
-
 
 def draw_shoreline(img, coastline, result_jpg):
     radius=5
@@ -144,93 +160,136 @@ def mkdir_if_no_exist(dir):
 if __name__ == '__main__':
     # Definition of the directories we need: coastline, coastline_selection, images
     opts = Opts().parse_args()
+    Input_dir = opts.Intput_dir
     Output_dir = opts.Output_dir
-    Shoreline_dir = join(Output_dir, 'coastline/')
+    images_dir = opts.Images_dir
+    Shoreline_dir = Input_dir
     Shoreline_selection_dir = join(Output_dir, 'coastline_selection/')
     Shoreline_defective_dir = join(Output_dir, 'coastline_defective/')
-    images_dir = join(Output_dir, 'images/')
+    Shoreline_check_dir = join(Output_dir, 'coastline_check/')
+
+    if opts.check_coastlines is not None:
+        check_coastlines = True
+    else:
+        check_coastlines = False
+
+    if check_coastlines:
+        input_dir = opts.check_coastlines
+        output_dir = Shoreline_check_dir
+    else:
+        input_dir = Shoreline_dir
+        output_dir = Shoreline_selection_dir
 
     # List of all coastline images
-    ls = glob(Shoreline_dir + '*/*.jpg' )
+    ls = glob(input_dir + '*/coast_A*.jpg' )
     ls = np.sort(ls)
 
     for f in ls:
         path = Path(f)
-        rep_selection_dir = join(Shoreline_selection_dir, path.parent.name)
-        mkdir_if_no_exist(rep_selection_dir)
-
         print(f)
+
         _, name_jpg = split(f)
         f_txt = f.replace('.jpg', '.txt')
         f_txt = f_txt.replace('coast_A', 'coast_px_A')
         _, name_txt = split(f_txt)
-        f_txt_out = join(rep_selection_dir, name_txt)
-        f_jpg_out = join(rep_selection_dir, name_jpg)
+        f_txt_out = join(output_dir, path.parent.name, name_txt)
+        f_jpg_out = join(output_dir, path.parent.name, name_jpg)
         f_jpg_A = glob('{images_dir}/*/{A_jpg}'.format(images_dir=images_dir, A_jpg=name_jpg.replace('coast_A_', 'A_')))
 
-        # Plot input coastline image
-        img = cimg.read(f)
-        fig = show(img, display=True)
+        if check_coastlines:
+            rep_check_dir = join(Shoreline_check_dir, path.parent.name)
+            mkdir_if_no_exist(rep_check_dir)
 
-        # Decide if we want to throw away all the coastline, or keep it as it is, or perform a manual clean
-        msg = "Do you want to Throw away all the coastline, Keep it as it is, or Remove any part(s) of the coastline \
-         detection? (t/k/r)"
-        manual_clean = raw_input(msg)
-
-        if manual_clean == 'r':
-
-            fig = show(img, display=False)
-
-            # Definition of the areas to be masked
-            sl_mask = sl_mask_define(img, fig=fig)
-
-            # Parsing every shoreline point, and check if we keep it or not
-            with open(f_txt_out, 'w') as f_coastline_out:
-                with open(f_txt) as f_coastline:
-                    #skip header
-                    line = f_coastline.readline()
-                    line = f_coastline.readline()
-                    while line:
-
-                        # Shoreline points coordinates:
-                        x = line.split()[0]
-                        y = line.split()[1]
-                        point = Point(float(x), float(y))
-
-                        # check if shoreline point is inside of any of the areas to be masked:
-                        spike = False
-                        for i in range(len(sl_mask)):
-                            polygon = Polygon(sl_mask[str(i)]._points)
-                            if polygon.contains(point):
-                                spike = True
-                                break
-
-                        # write clean shoreline
-                        if not spike:
-                            f_coastline_out.write(line)
-
-                        line = f_coastline.readline()
-
-            with open(f_txt_out, 'r') as f_coastline_out:
-                coastline = f_coastline_out.readlines()
-
-            # Plot cleaned shoreline
+            f_txt_out = join(Shoreline_check_dir, name_txt)
+            shutil.copy(f_txt, f_txt_out)
+            with open(f_txt) as f_coastline:
+                coastline = f_coastline.readlines()
+            # Plot checked shorelines
             img_A = cimg.read(f_jpg_A[0])
             draw_shoreline(img_A, coastline, f_jpg_out)
 
-        if (manual_clean == 't') + (manual_clean == 'r'):
-            # Move original coastline files to rep_defective_dir
-            rep_defective_dir = join(Shoreline_defective_dir, path.parent.name)
-            mkdir_if_no_exist(rep_defective_dir)
-            f_txt_defect = join(rep_defective_dir, name_txt)
-            f_jpg_defect = join(rep_defective_dir, name_jpg)
-            shutil.move(f, f_jpg_defect)
-            shutil.move(f_txt, f_txt_defect)
+        else:
+            # Plot input coastline image
+            img = cimg.read(f)
+            fig = show(img, display=True)
 
-        elif manual_clean == 'k':
-            # move directly the original coastline image and txt file to coastline_selection
-            shutil.move(f, f_jpg_out)
-            shutil.move(f_txt, f_txt_out)
+            # Decide if we want to throw away all the coastline, or keep it as it is, or perform a manual clean
+            msg = "Do you want to Throw away all the coastline, Keep it as it is, Remove any part(s) of the coastline \
+            , or Choose any part(s) of the coastline? (t/k/r/c)"
+            manual_clean = raw_input(msg)
+
+            if (manual_clean == 'k') + (manual_clean == 'r') + (manual_clean == 'c'):
+                # Creation of sub-folder selection/date
+                rep_selection_dir = join(Shoreline_selection_dir, path.parent.name)
+                mkdir_if_no_exist(rep_selection_dir)
+
+
+            if (manual_clean == 'r') + (manual_clean == 'c'):
+
+                fig = show(img, display=False)
+
+                # Definition of the areas to be masked or to be chosen
+                sl_mask = sl_mask_define(img, fig=fig)
+
+                # Parsing every shoreline point, and check if we keep it or not
+                with open(f_txt_out, 'w') as f_coastline_out:
+                    with open(f_txt) as f_coastline:
+                        #skip header
+                        line = f_coastline.readline()
+                        line = f_coastline.readline()
+
+                        while line:
+                            # Shoreline points coordinates:
+                            x = line.split()[0]
+                            y = line.split()[1]
+                            point = Point(float(x), float(y))
+
+                            if manual_clean == 'r':
+                                # check if shoreline point is inside of any of the areas to be masked:
+                                spike = False
+                                for i in range(len(sl_mask)):
+                                    polygon = Polygon(sl_mask[str(i)]._points)
+                                    if polygon.contains(point):
+                                        spike = True
+                                        break
+
+                            elif manual_clean == 'c':
+                                # check if shoreline point is inside of any of the areas to be chosen:
+                                spike = False
+                                for i in range(len(sl_mask)):
+                                    polygon = Polygon(sl_mask[str(i)]._points)
+                                    if not polygon.contains(point):
+                                        spike = True
+                                        break
+                                    else:
+                                        print('ouhbaaaaa')
+
+                            # if ok add coastline point to clean coastline
+                            if not spike:
+                                f_coastline_out.write(line)
+
+                            line = f_coastline.readline()
+
+                with open(f_txt_out, 'r') as f_coastline_out:
+                    coastline = f_coastline_out.readlines()
+
+                # Plot cleaned shoreline
+                img_A = cimg.read(f_jpg_A[0])
+                draw_shoreline(img_A, coastline, f_jpg_out)
+
+            if (manual_clean == 't') + (manual_clean == 'r') + (manual_clean == 'c'):
+                # Move original coastline files to rep_defective_dir
+                rep_defective_dir = join(Shoreline_defective_dir, path.parent.name)
+                mkdir_if_no_exist(rep_defective_dir)
+                f_txt_defect = join(rep_defective_dir, name_txt)
+                f_jpg_defect = join(rep_defective_dir, name_jpg)
+                shutil.move(f, f_jpg_defect)
+                shutil.move(f_txt, f_txt_defect)
+
+            elif manual_clean == 'k':
+                # move directly the original coastline image and txt file to coastline_selection
+                shutil.move(f, f_jpg_out)
+                shutil.move(f_txt, f_txt_out)
 
 
 
