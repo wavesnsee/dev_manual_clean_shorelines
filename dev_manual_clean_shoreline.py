@@ -80,6 +80,20 @@ def _choose(event):
     plt.close()
 
 
+def _add_mask(event):
+    global add_mask
+    global terminate_mask
+    terminate_mask = False
+    add_mask = True
+    plt.close()
+
+
+def _terminate_mask(event):
+    global terminate_mask
+    terminate_mask = True
+    plt.close()
+
+
 def show(img, display=False, moment_choice=False):
     """ Create a figure of the input image `img`, that contains a shoreline. Option 'display' to show figure or not.
 
@@ -144,40 +158,51 @@ def sl_mask_define(img, fig=None):
     points = {}
     i = 0
     multiple_masks = True
-    if not fig:
-        fig = plt.figure(1)
-        ax = fig.add_subplot(111)
-    else:
-        ax = fig.axes[0]
 
     while multiple_masks:
+        print(i)
+        # if not fig:
+        fig = plt.figure(1,     figsize=(16,10))
+        ax = fig.add_subplot(111)
+        # else:
+        #     ax = fig.axes[0]
         msg = "PLEASE select zone by clicking on the image. Left click to "
         msg += " add a point, right \nclick to remove last point, middle"
         msg += " click or Return to validate."
         print(msg)
-        ax.imshow(img[:, :, ::-1])
+        if i ==0:
+            ax.imshow(img[:, :, ::-1])
+        else:
+            ax.imshow(actual_mask[:, :, ::-1])
         points[str(i)] = fig.ginput(n=0, timeout=0)
         points[str(i)] = [(int(x), int(y)) for x, y in points[str(i)]]
-        msg += " \n Do you want to choose/mask an other part of the coastline ? (y/n)"
-        other_mask = raw_input(msg)
-        if other_mask == 'y':
-            i += 1
-        else:
+
+        print "\nDisplaying selected area... (Pixels OUT of ROI are red)"
+        for p in range(len(points)):
+            roi[str(p)] = geom.Zone(points=points[str(p)], imshape=img.shape)
+            if p == 0:
+                roi_actual = geom.Zone(points=points[str(p)], imshape=img.shape)
+                roi_actual_mask = roi_actual.mask
+            else:
+                roi_actual_mask *= roi[str(p)].mask
+        actual_mask = cimg.paint_mask(img, roi_actual_mask, display=False)
+        plt.imshow(actual_mask[:, :, ::-1])
+        axcut = plt.axes([0.1, 0.9, 0.15, 0.05])
+        button_mask_again = Button(axcut, 'Add mask', color='brown', hovercolor='lightgreen')
+        button_mask_again.on_clicked(_add_mask)
+        axcut = plt.axes([0.3, 0.9, 0.15, 0.05])
+        button_terminate_mask = Button(axcut, 'Terminate masking', color='brown', hovercolor='lightgreen')
+        button_terminate_mask.on_clicked(_terminate_mask)
+        plt.show()
+
+        if terminate_mask:
             multiple_masks = False
+
+        elif add_mask:
+            i += 1
+
     plt.close(1)
 
-    for i in range(len(points)):
-        roi[str(i)] = geom.Zone(points=points[str(i)], imshape=img.shape)
-        if i == 0:
-            roi_final = geom.Zone(points=points[str(i)], imshape=img.shape)
-            roi_final_mask = roi_final.mask
-        else:
-            roi_final_mask *= roi[str(i)].mask
-
-    print "\nDisplaying selected area... (Pixels OUT of ROI are red)"
-    masked = cimg.paint_mask(img, roi_final_mask, display=False)
-    plt.imshow(masked[:, :, ::-1])
-    plt.show()
     return roi
 
 def draw_shoreline(img, coastline, result_jpg):
