@@ -26,6 +26,7 @@ from glob import glob
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from pathlib import Path
+from matplotlib.widgets import Button
 
 
 class Opts(ArgumentParser):
@@ -58,7 +59,28 @@ class Opts(ArgumentParser):
         return opts
 
 
-def show(img, display=False):
+def _throw(event):
+    global choice
+    choice = 't'
+    plt.close()
+
+def _keep(event):
+    global choice
+    choice = 'k'
+    plt.close()
+
+def _mask(event):
+    global choice
+    choice = 'r'
+    plt.close()
+
+def _choose(event):
+    global choice
+    choice = 'c'
+    plt.close()
+
+
+def show(img, display=False, moment_choice=False):
     """ Create a figure of the input image `img`, that contains a shoreline. Option 'display' to show figure or not.
 
         Parameters
@@ -78,6 +100,25 @@ def show(img, display=False):
     ylim = plt.ylim()
     plt.xlim(xlim)
     plt.ylim(ylim)
+
+    if moment_choice:
+
+        axcut = plt.axes([0.1, 0.9, 0.15, 0.05])
+        bcut_throw = Button(axcut, 'Throw away', color='brown', hovercolor='lightgreen')
+        bcut_throw.on_clicked(_throw)
+
+        axcut = plt.axes([0.3, 0.9, 0.15, 0.05])
+        bcut_keep = Button(axcut, 'Keep', color='darkgreen', hovercolor='lightgreen')
+        bcut_keep.on_clicked(_keep)
+
+        axcut = plt.axes([0.5, 0.9, 0.18, 0.05])
+        bcut_mask = Button(axcut, 'Mask area(s)', color='darkgreen', hovercolor='lightgreen')
+        bcut_mask.on_clicked(_mask)
+
+        axcut = plt.axes([0.7, 0.9, 0.18, 0.05])
+        bcut_choose = Button(axcut, 'Choose area(s)', color='darkgreen', hovercolor='lightgreen')
+        bcut_choose.on_clicked(_choose)
+
     if display:
         plt.show()
     return fig
@@ -211,12 +252,12 @@ if __name__ == '__main__':
         else:
             # Plot input coastline image
             img = cimg.read(f)
-            fig = show(img, display=True)
-
+            fig = show(img, display=True, moment_choice=True)
+            manual_clean = choice
             # Decide if we want to throw away all the coastline, or keep it as it is, or perform a manual clean
-            msg = "Do you want to Throw away all the coastline, Keep it as it is, Remove any part(s) of the coastline \
-            , or Choose any part(s) of the coastline? (t/k/r/c)"
-            manual_clean = raw_input(msg)
+            # msg = "Do you want to Throw away all the coastline, Keep it as it is, Remove any part(s) of the coastline \
+            # , or Choose any part(s) of the coastline? (t/k/r/c)"
+            # manual_clean = raw_input(msg)
 
             if (manual_clean == 'k') + (manual_clean == 'r') + (manual_clean == 'c'):
                 # Creation of sub-folder selection/date
