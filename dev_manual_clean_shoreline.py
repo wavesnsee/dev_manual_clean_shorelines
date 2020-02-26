@@ -10,7 +10,6 @@ Usage: dev_manual_clean_shoreline.py <input_dir_coastline> <output_dir_coastline
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
-import pdb
 import cv2
 import shutil
 import cams.geom as geom
