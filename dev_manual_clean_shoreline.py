@@ -9,7 +9,7 @@ Usage: dev_manual_clean_shoreline.py <input_dir_coastline> <output_dir_coastline
 
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import unicode_literals
+from __future__ import unicode_literals 
 import cv2
 import shutil
 import cams.geom as geom
@@ -26,6 +26,7 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from pathlib import Path
 from matplotlib.widgets import Button
+import pdb
 
 
 class Opts(ArgumentParser):
@@ -260,6 +261,7 @@ if __name__ == '__main__':
         f_txt_out = join(output_dir, path.parent.name, name_txt)
         f_jpg_out = join(output_dir, path.parent.name, name_jpg)
         f_jpg_A = glob('{images_dir}/*/{A_jpg}'.format(images_dir=images_dir, A_jpg=name_jpg.replace('coast_A_', 'A_')))
+        # f_jpg_A = glob('{images_dir}/*.jpg'.format(images_dir=images_dir))
 
         if check_coastlines:
             rep_check_dir = join(Shoreline_check_dir, path.parent.name)
@@ -302,6 +304,7 @@ if __name__ == '__main__':
                         #skip header
                         line = f_coastline.readline()
                         line = f_coastline.readline()
+
 
                         while line:
                             # Shoreline points coordinates:
