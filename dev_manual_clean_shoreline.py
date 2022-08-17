@@ -247,7 +247,7 @@ if __name__ == '__main__':
         output_dir = Shoreline_selection_dir
 
     # List of all coastline images
-    ls = glob(input_dir + '*/coast_A*.jpg' )
+    ls = glob(input_dir + '/coast_*.jpg')
     ls = np.sort(ls)
 
     for f in ls:
@@ -260,7 +260,7 @@ if __name__ == '__main__':
         _, name_txt = split(f_txt)
         f_txt_out = join(output_dir, path.parent.name, name_txt)
         f_jpg_out = join(output_dir, path.parent.name, name_jpg)
-        f_jpg_A = glob('{images_dir}/*/{A_jpg}'.format(images_dir=images_dir, A_jpg=name_jpg.replace('coast_A_', 'A_')))
+        f_jpg_A = glob('{images_dir}/{A_jpg}'.format(images_dir=images_dir, A_jpg=name_jpg.replace('coast_px_A_', 'A_')))
         # f_jpg_A = glob('{images_dir}/*.jpg'.format(images_dir=images_dir))
 
         if check_coastlines:
