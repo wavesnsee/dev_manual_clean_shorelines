@@ -90,8 +90,8 @@ def oversample_shoreline_pixels(shoreline_pixels):
     return shoreline_pixels_oversampl
 
 
-input_dir_average_imgs = '/home/florent/Projects/Etretat/CAM1/storm_study/atiyah/images/n_frames_min_600/A_atiyah/'
-output_dir_coastlines = '/home/florent/Projects/Etretat/CAM1/storm_study/atiyah/Shoreline_manually_created/'
+input_dir_average_imgs = '/home/florent/Projects/Etretat/CAM1/storm_study/atiyah/images/n_frames_min_600/A_atiyah_after_storm/'
+output_dir_coastlines = '/home/florent/Projects/Etretat/CAM1/storm_study/atiyah/Shoreline_manually_created/after_storm/'
 
 
 # List of all average images
@@ -102,9 +102,14 @@ for f in ls:
     _, name = os.path.split(f)
     print(f)
 
-    # mouse definition of shoreline
-    fig, ax = plt.subplots(constrained_layout=True)
+    #read image
     img = cv2.imread(f)
+
+    # converting BGR to RGB
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # mouse definition of shoreline
+    fig, ax = plt.subplots(figsize=(20, 15), constrained_layout=True)
     ax.imshow(img)
     klicker = clicker(ax, ["event"], markers=["x"], **{"linestyle": "--"})
     plt.show()
@@ -113,15 +118,17 @@ for f in ls:
     shoreline_positions_oversample = oversample_shoreline_pixels(shoreline_positions)
 
     # plot oversampled  shoreline
-    fig, ax = plt.subplots(constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(20, 15), constrained_layout=True)
     ax.imshow(img)
     ax.plot(shoreline_positions_oversample[:, 0], shoreline_positions_oversample[:, 1], '.r')
     plt.show()
+    name_jpg = name.replace('A_', 'coast_px_A_')
+    fig.savefig(os.path.join(output_dir_coastlines, name_jpg))
     print(shoreline_positions)
 
     # save pixel coordinates of shoreline in coastline txt file
     name_txt = name.replace('.jpg', '.txt')
-    name_txt = name_txt.replace('A_', 'coast_px_A')
+    name_txt = name_txt.replace('A_', 'coast_px_A_')
     f_coast_txt = os.path.join(output_dir_coastlines, name_txt)
     with open(f_coast_txt, 'w') as f_out:
         for n in range(shoreline_positions_oversample.shape[0]):
