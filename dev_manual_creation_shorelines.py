@@ -90,9 +90,12 @@ def oversample_shoreline_pixels(shoreline_pixels):
     return shoreline_pixels_oversampl
 
 
-input_dir_average_imgs = '/home/florent/Projects/Etretat/CAM1/storm_study/atiyah/images/n_frames_min_600/A_atiyah_after_storm/'
-output_dir_coastlines = '/home/florent/Projects/Etretat/CAM1/storm_study/atiyah/Shoreline_manually_created/after_storm/'
+input_dir_average_imgs = '/home/florent/Projects/Etretat/CAM1/storm_study/ciara/images/n_frames_min_600/A_ciara_during_storm_1/'
+output_dir_coastlines = '/home/florent/Projects/Etretat/CAM1/storm_study/ciara/Shoreline_manually_created/during_storm/'
 
+# creation of output dir
+if not os.path.exists(output_dir_coastlines):
+    os.makedirs(output_dir_coastlines)
 
 # List of all average images
 ls = glob(input_dir_average_imgs + '/A_*.jpg')
@@ -115,28 +118,24 @@ for f in ls:
     plt.show()
     shoreline_positions = klicker.get_positions()
     shoreline_positions = shoreline_positions['event']
-    shoreline_positions_oversample = oversample_shoreline_pixels(shoreline_positions)
+    if shoreline_positions.size > 0:
+        shoreline_positions_oversample = oversample_shoreline_pixels(shoreline_positions)
 
-    # plot oversampled  shoreline
-    fig, ax = plt.subplots(figsize=(20, 15), constrained_layout=True)
-    ax.imshow(img)
-    ax.plot(shoreline_positions_oversample[:, 0], shoreline_positions_oversample[:, 1], '.r')
-    plt.show()
-    name_jpg = name.replace('A_', 'coast_px_A_')
-    fig.savefig(os.path.join(output_dir_coastlines, name_jpg))
-    print(shoreline_positions)
+        # plot oversampled  shoreline
+        fig, ax = plt.subplots(figsize=(20, 15), constrained_layout=True)
+        ax.imshow(img)
+        ax.plot(shoreline_positions_oversample[:, 0], shoreline_positions_oversample[:, 1], '.r')
+        plt.show()
+        name_jpg = name.replace('A_', 'coast_px_A_')
+        fig.savefig(os.path.join(output_dir_coastlines, name_jpg))
+        print(shoreline_positions)
 
-    # save pixel coordinates of shoreline in coastline txt file
-    name_txt = name.replace('.jpg', '.txt')
-    name_txt = name_txt.replace('A_', 'coast_px_A_')
-    f_coast_txt = os.path.join(output_dir_coastlines, name_txt)
-    with open(f_coast_txt, 'w') as f_out:
-        for n in range(shoreline_positions_oversample.shape[0]):
-            f_out.write('%i %i\n' %(np.int(np.around(shoreline_positions_oversample[n, 0])),
-                                    np.int(np.around(shoreline_positions_oversample[n, 1]))))
-
-
-
-
-
+        # save pixel coordinates of shoreline in coastline txt file
+        name_txt = name.replace('.jpg', '.txt')
+        name_txt = name_txt.replace('A_', 'coast_px_A_')
+        f_coast_txt = os.path.join(output_dir_coastlines, name_txt)
+        with open(f_coast_txt, 'w') as f_out:
+            for n in range(shoreline_positions_oversample.shape[0]):
+                f_out.write('%i %i\n' %(np.int(np.around(shoreline_positions_oversample[n, 0])),
+                                        np.int(np.around(shoreline_positions_oversample[n, 1]))))
 
