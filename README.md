@@ -1,6 +1,10 @@
 # dev_manual_clean_shorelines
 
-This program aims to perform a manual clean of detected coastlines, to only keep clean parts of detections.
+With this project, we can do 2 different things: 
+- Manually create shorelines with a GUI ('dev_manual_creation_shorelines.py')
+- Clean them with a GUI (this is deprecated now, as editing of shorelines is done automatically now) ('dev_manual_clean_shoreline.py').
+
+Here are some details to run manual cleaning of shorelines:
 
 Arguments of the program:
 - Input_dir (coastlines)
